@@ -8,17 +8,18 @@ def parse_stdin():
     parser = argparse.ArgumentParser(
         description="Handy Forward Kinematics and (limited) Inverse Kinematics solver for fixed open chain robotic "
                     "arms (with fixed joints).")
-    parser.add_argument("-o", "--origin", help="Origin for robot base (World frame).", default=[0, 0, 0])
-    parser.add_argument("-j", "--angles", help="List of joint angles.", default=[0, -45, 45])
+    parser.add_argument("-o", "--origin", help="Origin for robot base (World frame).", nargs='+', default=[0, 0, 0],
+                        type=float)
+    parser.add_argument("-j", "--angles", help="List of joint angles.", nargs='+', type=float, default=[0, -45, 45])
     parser.add_argument("-m", "--mode", help="Angle input in DEG or RAD", default='DEG')
     parser.add_argument("-a", "--axes", help="List of joint rotational axis ('X', 'Y', or 'Z') in order.",
                         default=['Y', 'Y', 'Y'])
     parser.add_argument("-t", "--translations",
                         help="List of lists of translation vectors (x,y,z) in order (including end-effector "
-                             "translation vector).",
-                        default=[[0, 0, 0.09], [0.035, 0, 0.1], [0.1, 0, 0]])
+                             "translation vector).", nargs='+', type=float,
+                        default=[0, 0, 0.09, 0.035, 0, 0.1, 0.1, 0, 0, 0.1, 0, 0])
     parser.add_argument("-p", "--paxes", help="Axes for 2D plotting ('XY', 'XZ', 'YZ', etc.)", default='XZ')
-    parser.add_argument("--bangleaxis", help="Base angle and rotation axis (for experimenting).",
+    parser.add_argument("--bangleaxis", help="Base angle and rotation axis (for experimenting).", nargs='+',
                         default=[0, 'N/A'])
     return parser.parse_args()
 
@@ -72,6 +73,8 @@ class FKIK:
     def __init__(self, joint_angles, joint_axis, joint_translations, mode='DEG'):
         assert (len(joint_angles) == len(joint_axis) == len(joint_translations))
         self.verboseJac = None
+        print(joint_angles)
+        print(type(joint_angles))
         if mode == 'DEG':
             self.joint_angles = list(map(np.deg2rad, joint_angles))
         else:
@@ -243,10 +246,11 @@ if __name__ == "__main__":
     np.set_printoptions(suppress=True)
     args = parse_stdin()
     zero_vec = args.origin
-    base_angle, base_axis, base_trans = args.bangleaxis[0], args.bangleaxis[1], zero_vec
-    eff_angle, eff_axis, eff_trans = 0, 'N/A', [0.1, 0, 0]
+    translations = [args.translations[i:i + 3] for i in range(0, len(args.translations), 3)]
+    base_angle, base_axis, base_trans = float(args.bangleaxis[0]), args.bangleaxis[1], zero_vec
+    eff_angle, eff_axis, eff_trans = 0, 'N/A', translations[-1]
     obj = FKIK([base_angle] + args.angles + [eff_angle], [base_axis] + args.axes + [eff_axis],
-               [base_trans] + args.translations + [eff_trans], mode=args.mode)
+               [base_trans] + translations[:-1] + [eff_trans], mode=args.mode)
     obj.verboseChain()
     obj.chain()
     obj.jointPoses()
