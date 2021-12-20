@@ -1,6 +1,26 @@
+import argparse
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
+
+
+def parse_stdin():
+    parser = argparse.ArgumentParser(
+        description="Handy Forward Kinematics and (limited) Inverse Kinematics solver for fixed open chain robotic "
+                    "arms (with fixed joints).")
+    parser.add_argument("-o", "--origin", help="Origin for robot base (World frame).", default=[0, 0, 0])
+    parser.add_argument("-j", "--angles", help="List of joint angles.", default=[0, -45, 45])
+    parser.add_argument("-m", "--mode", help="Angle input in DEG or RAD", default='DEG')
+    parser.add_argument("-a", "--axes", help="List of joint rotational axis ('X', 'Y', or 'Z') in order.",
+                        default=['Y', 'Y', 'Y'])
+    parser.add_argument("-t", "--translations",
+                        help="List of lists of translation vectors (x,y,z) in order (including end-effector "
+                             "translation vector).",
+                        default=[[0, 0, 0.09], [0.035, 0, 0.1], [0.1, 0, 0]])
+    parser.add_argument("-p", "--paxes", help="Axes for 2D plotting ('XY', 'XZ', 'YZ', etc.)", default='XZ')
+    parser.add_argument("--bangleaxis", help="Base angle and rotation axis (for experimenting).",
+                        default=[0, 'N/A'])
+    return parser.parse_args()
 
 
 class TM:
@@ -221,15 +241,16 @@ class FKIK:
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
-    zero_vec = [0, 0, 0]
-    base_angle, base_axis, base_trans = 0, 'N/A', zero_vec
+    args = parse_stdin()
+    zero_vec = args.origin
+    base_angle, base_axis, base_trans = args.bangleaxis[0], args.bangleaxis[1], zero_vec
     eff_angle, eff_axis, eff_trans = 0, 'N/A', [0.1, 0, 0]
-    obj = FKIK([base_angle, 0, -45, 45, eff_angle], [base_axis, 'Y', 'Y', 'Y', eff_axis],
-               [base_trans, [0, 0, 0.09], [0.035, 0, 0.1], [0.1, 0, 0], eff_trans], mode='DEG')
+    obj = FKIK([base_angle] + args.angles + [eff_angle], [base_axis] + args.axes + [eff_axis],
+               [base_trans] + args.translations + [eff_trans], mode=args.mode)
     obj.verboseChain()
     obj.chain()
     obj.jointPoses()
     obj.printJac()
     obj.printJacVerbose()
-    obj.plotRobot2D(ori='XZ', origin=base_trans)
+    obj.plotRobot2D(ori=args.paxes, origin=base_trans)
     obj.plotRobot3D(origin=base_trans)
