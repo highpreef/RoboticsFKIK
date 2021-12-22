@@ -73,8 +73,6 @@ class FKIK:
     def __init__(self, joint_angles, joint_axis, joint_translations, mode='DEG'):
         assert (len(joint_angles) == len(joint_axis) == len(joint_translations))
         self.verboseJac = None
-        print(joint_angles)
-        print(type(joint_angles))
         if mode == 'DEG':
             self.joint_angles = list(map(np.deg2rad, joint_angles))
         else:
